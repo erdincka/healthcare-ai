@@ -1,0 +1,1 @@
+This one includes a script to populate a mysql DB with data (should also work with mariadb). Once the DB has been added then ensure it has been added to presto (preferably with catalog name mysql), then import the supersets export found here to automatically build some dashboards
