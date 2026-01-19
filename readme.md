@@ -36,8 +36,22 @@ Instructions to get whisper working from MLIS (a framework located within HPE Pr
     image: davemcmahon/vllm-with-audio:latest
     arguments: --model openai/whisper-large-v3 --port 8080
 
+Instructions to get NLLB working from MLIS (a framework located within HPE Private Cloud AI, AI Essentials interface):
 
-Instructions to deploy CPU optimised NLLB translation model loaded via kServe (open source model serving solution included within the kubeflow framework):
+    registry: none
+    model format: custom
+    image: davemcmahon/nllb-translator
+    resources: 
+        cpu: 1 -> 4
+        memory: 2Gi - 8Gi
+        gpu: 0 -> 0
+    arguments: none
+    environmental variables: 
+        HF_HOME: "/mnt/models/.cache"
+        TRANSFORMERS_CACHE: "/mnt/models/.cache"
+
+    
+Alternative instructions to deploy CPU optimised NLLB translation model loaded via kServe (open source model serving solution included within the kubeflow framework):
 
     As kubectl admin, kubectl apply -f nllb-translator.yaml (found in "nllb_deployment" folder)
     First change the namespace within the yaml to reflect your environment
