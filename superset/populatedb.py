@@ -8,9 +8,10 @@ fake = Faker()
 
 # Database connection parameters
 DB_CONFIG = {
-    'host': '10.0.31.73',
+    'host': 'localhost',
+    # 'port': 443,
     'user': 'root',
-    'password': 'Compaq1!',
+    'password': 'S4F3p@ss',
     'database': 'triageai',
     'charset': 'utf8mb4'
 }
