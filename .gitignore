@@ -1,4 +1,7 @@
 **/.DS_Store
 **/*.zip
 **/*.pyc
-superset/dashboard_lonpcai
+superset/dashboard_*
+.env
+.venv
+**/__pycache__

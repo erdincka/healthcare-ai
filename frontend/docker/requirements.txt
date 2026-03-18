@@ -1,0 +1,10 @@
+gradio>=4.0.0
+httpx>=0.25.0
+urllib3>=1.26.0
+reportlab>=3.6.0
+asyncpg>=0.29.0
+structlog>=23.1.0
+kubernetes
+python-dotenv
+typing-extensions
+faker>=23.0.0

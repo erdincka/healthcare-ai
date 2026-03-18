@@ -1,0 +1,42 @@
+apiVersion: ezconfig.hpe.ezaf.com/v1alpha1
+kind: EzAppConfig
+metadata:
+  finalizers:
+  - ezappconfig.ezconfig.hpe.ezaf.com/finalizer
+  generation: 1
+  labels:
+    hpe-ezua/imported-app: "true"
+  name: healthcareai-0.2.0-1763478694849
+spec:
+  backoffLimit: 3
+  category: dataScience
+  chartVersion: 0.2.0
+  description: AI-Assisted Healthcare, patient and clinician support
+  install: true
+  label: Healthcare AI
+  logoImage: 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
+  name: healthcareai
+  options:
+    create-namespace: "true"
+    namespace: healthcareai
+    timeout: 45m
+    wait: "true"
+  values: |
+    replicaCount: 1
+    image:
+      repository: nexusglobal/triageai
+      tag: latest
+      pullPolicy: Always
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "500m"
+      limits:
+        memory: "1Gi"
+        cpu: "1000m"
+    ezua:
+      virtualService:
+        endpoint: "healthcare-ai.${DOMAIN_NAME}"
+        istioGateway: "istio-system/ezaf-gateway"
+
+  version: ""

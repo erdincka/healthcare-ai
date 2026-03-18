@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: davemcmahon/triageai
+  repository: nexusglobal/triageai
   tag: latest
   pullPolicy: Always
 
@@ -17,27 +17,3 @@ ezua:
   virtualService:
     endpoint: "healthcare-ai.${DOMAIN_NAME}"
     istioGateway: "istio-system/ezaf-gateway"
-
-models:
-  medreason:
-    url: "[MLIS ENDPOINT GOES HERE]/v1/completions"
-    token: "[MLIS TOKEN GOES HERE]"
-  
-  whisper:
-    url: "[MLIS ENDPOINT GOES HERE]/v1/audio/transcriptions"
-    token: "[MLIS TOKEN GOES HERE]"
-  
-  nllb:
-    url: "[MLIS ENDPOINT GOES HERE]/v1/models/nllb-translator:predict"
-    token: "[MLIS TOKEN GOES HERE]"
-  
-  medgemma:
-    url: "[MLIS ENDPOINT GOES HERE]"
-    token: "[MLIS TOKEN GOES HERE]"
-
-# Database Configuration
-database:
-  host: "ezmysql.ezmeral.demo.local"
-  user: "demo_user"
-  password: "Hpepoc@123"
-  name: "triageai"
