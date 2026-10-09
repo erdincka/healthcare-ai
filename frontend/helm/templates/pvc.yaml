@@ -3,6 +3,11 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ .Release.Name }}-data
   namespace: {{ .Release.Namespace }}
+  labels:
+{{- include "healthcareai.labels" . | nindent 4 }}
+  annotations:
+    # Keep the saved Settings (api_config.json) across uninstall and reinstall.
+    helm.sh/resource-policy: keep
 spec:
   accessModes:
     - ReadWriteOnce

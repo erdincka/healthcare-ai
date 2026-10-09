@@ -4,8 +4,7 @@ metadata:
   name: {{ .Release.Name }}
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ .Release.Name }}
-{{- include "hpe-ezua.labels" . | nindent 4 }}
+{{- include "healthcareai.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -14,22 +13,42 @@ spec:
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}
-{{- include "hpe-ezua.labels" . | nindent 8 }}
+{{- include "healthcareai.labels" . | nindent 8 }}
     spec:
+      securityContext:
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: triageai
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
         ports:
-        - containerPort: 7860
+        - name: http
+          containerPort: 7860
+        readinessProbe:
+          httpGet:
+            path: /manifest.json
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /manifest.json
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 20
         volumeMounts:
         - name: config-data
           mountPath: /app/data
         resources:
 {{- toYaml .Values.resources | nindent 10 }}
-      securityContext:
-        fsGroup: 1000
       volumes:
       - name: config-data
         persistentVolumeClaim:

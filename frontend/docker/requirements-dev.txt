@@ -1,0 +1,4 @@
+# Development and test tooling; not installed in the production image.
+pytest>=8.3
+ruff>=0.14
+mypy>=1.14

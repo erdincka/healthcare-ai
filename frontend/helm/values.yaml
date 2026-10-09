@@ -2,18 +2,19 @@ replicaCount: 1
 
 image:
   repository: nexusglobal/triageai
-  tag: latest
-  pullPolicy: Always
+  # Leave empty to use the chart's appVersion.
+  tag: "1.2.1"
+  pullPolicy: IfNotPresent
 
 resources:
   requests:
-    memory: "512Mi"
-    cpu: "500m"
-  limits:
     memory: "1Gi"
     cpu: "1000m"
+  limits:
+    memory: "2Gi"
+    cpu: "2000m"
 
 ezua:
   virtualService:
-    endpoint: "healthcare-ai.${DOMAIN_NAME}"
+    endpoint: "healthcare.${DOMAIN_NAME}"
     istioGateway: "istio-system/ezaf-gateway"

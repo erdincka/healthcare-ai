@@ -1,46 +1,33 @@
+# Production image for the HealthcareAI frontend (Gradio).
+# Development hot-reload is provided by the Tiltfile, not by this image.
 FROM python:3.12-slim-bookworm
 
-# Standard labels
 LABEL maintainer="HealthcareAI Team" \
-      description="Frontend UI for HealthcareAI Application"
+      description="Frontend UI for the HealthcareAI demo on HPE Private Cloud AI"
 
-# Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     UV_COMPILE_BYTECODE=1 \
-    UV_SYSTEM_PYTHON=1
+    UV_SYSTEM_PYTHON=1 \
+    GRADIO_ANALYTICS_ENABLED=False
 
 WORKDIR /app
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv for faster package management
-ADD https://astral.sh/uv/install.sh /uv-installer.sh
-RUN sh /uv-installer.sh && rm /uv-installer.sh
-ENV PATH="/root/.local/bin/:$PATH"
+# uv, pinned, copied from the official image (no installer script, no curl needed).
+COPY --from=ghcr.io/astral-sh/uv:0.12.23 /uv /uvx /bin/
 
-# Install Python dependencies using uv
 COPY requirements.txt .
 RUN uv pip install --no-cache -r requirements.txt
 
-# Copy application code
-COPY . .
-
-# Create a non-root user for security
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
+RUN useradd -m -u 1000 appuser
+COPY --chown=appuser:appuser . .
 USER appuser
 
-# Expose the Gradio port
 EXPOSE 7860
 
-# Health check (optional but recommended for K8s)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:7860/ || exit 1
-
-# Run the application
-CMD ["gradio", "app.py"]
+# Kubernetes probes (see the Helm chart) replace a Docker HEALTHCHECK.
+CMD ["python", "app.py"]

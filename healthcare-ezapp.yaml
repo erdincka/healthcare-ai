@@ -1,16 +1,17 @@
+# EzAppConfig for importing HealthcareAI into HPE Private Cloud AI (AI Essentials).
+# Reference for the "Import Framework" UI: upload healthcareai-0.3.1.tgz, use the
+# values below and the logo. The UI generates metadata.name with a timestamp and
+# manages finalizers and status itself.
 apiVersion: ezconfig.hpe.ezaf.com/v1alpha1
 kind: EzAppConfig
 metadata:
-  finalizers:
-  - ezappconfig.ezconfig.hpe.ezaf.com/finalizer
-  generation: 1
   labels:
     hpe-ezua/imported-app: "true"
-  name: healthcareai-0.2.0-1763478694849
+  name: healthcareai
 spec:
   backoffLimit: 3
   category: dataScience
-  chartVersion: 0.2.0
+  chartVersion: 0.3.1
   description: AI-Assisted Healthcare, patient and clinician support
   install: true
   label: Healthcare AI
@@ -25,18 +26,17 @@ spec:
     replicaCount: 1
     image:
       repository: nexusglobal/triageai
-      tag: latest
-      pullPolicy: Always
+      tag: "1.2.1"
+      pullPolicy: IfNotPresent
     resources:
       requests:
-        memory: "512Mi"
-        cpu: "500m"
-      limits:
         memory: "1Gi"
         cpu: "1000m"
+      limits:
+        memory: "2Gi"
+        cpu: "2000m"
     ezua:
       virtualService:
-        endpoint: "healthcare-ai.${DOMAIN_NAME}"
+        endpoint: "healthcare.${DOMAIN_NAME}"
         istioGateway: "istio-system/ezaf-gateway"
-
   version: ""

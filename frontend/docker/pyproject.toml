@@ -1,0 +1,40 @@
+# Tooling configuration only; dependencies live in requirements*.txt.
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+ignore = [
+    "G201",     # structlog idiom: logger.error(..., exc_info=True); .exception() is stdlib-only advice
+    "BLE001",   # handlers deliberately catch Exception and return a message to the UI
+    "DTZ001",   # the triage table uses TIMESTAMP WITHOUT TIME ZONE; naive datetimes are intended
+    "DTZ005",
+    "ASYNC230", # blocking open() of a small local audio file before upload; follow-on item
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Gradio layout nests `with gr.Row(): with gr.Column():` and uses `progress=gr.Progress()` defaults.
+"app.py" = ["SIM117", "B008"]
+
+[tool.ruff.format]
+# Generated language tables; keep their compact one-line form.
+exclude = ["constants.py"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Gradio event handlers take whatever the components emit; check their bodies
+# without demanding a signature annotation on every handler.
+module = "app"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+warn_return_any = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

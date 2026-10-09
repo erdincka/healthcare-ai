@@ -3,10 +3,13 @@ kind: Service
 metadata:
   name: {{ .Release.Name }}
   namespace: {{ .Release.Namespace }}
+  labels:
+{{- include "healthcareai.labels" . | nindent 4 }}
 spec:
   selector:
     app: {{ .Release.Name }}
   ports:
-  - port: 80
-    targetPort: 7860
+  - name: http
+    port: 80
+    targetPort: http
   type: ClusterIP

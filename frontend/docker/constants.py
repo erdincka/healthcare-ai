@@ -1,7 +1,5 @@
-import os
-from typing import Dict, List, Union
 
-DEFAULTS: Dict[str, Dict[str, str]] = {
+DEFAULTS: dict[str, dict[str, str]] = {
     "whisper": {
         "url": "",
         "token": "",

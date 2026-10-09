@@ -1,4 +1,5 @@
-# Tiltfile for HealthcareAI Frontend
+# Tiltfile for HealthcareAI Frontend: development and testing only.
+# The published image and the EzAppConfig deployment never use this file.
 
 # Load .env file
 load('ext://dotenv', 'dotenv')
@@ -12,10 +13,15 @@ docker_build(
     'healthcare-ai',
     context='./frontend/docker',
     dockerfile='./frontend/docker/Dockerfile',
+    # The PCAI nodes are x86_64; build for them even from Apple Silicon.
+    platform='linux/amd64',
+    # Dev only: Gradio's hot-reload mode. The image's own CMD is production (python app.py).
+    entrypoint=['gradio', 'app.py'],
     live_update=[
+        # A dependency change needs a full rebuild (the app user cannot install packages).
+        fall_back_on(['./frontend/docker/requirements.txt']),
         sync('./frontend/docker', '/app/'),
-        run('pip install -r requirements.txt', trigger='./frontend/docker/requirements.txt')
-    ]
+    ],
 )
 
 # Deploying using Helm
@@ -28,7 +34,7 @@ k8s_yaml(helm(
     set=[
         'image.repository=healthcare-ai',
         'image.tag=latest',
-        'ezua.virtualService.endpoint=healthcare-ai.' + os.environ['DOMAIN']
+        'ezua.virtualService.endpoint=healthcare.' + os.environ['DOMAIN']
     ]
 ))
 

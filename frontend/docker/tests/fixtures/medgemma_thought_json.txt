@@ -1,0 +1,45 @@
+<unused94> thought
+The user wants me to analyze clinical notes and provide a structured diagnosis in JSON format.
+The JSON must contain the following keys:
+- `patient_name`: The patient's name.
+- `date_of_birth`: The patient's date of birth in YYYY-MM-DD format.
+- `visit_time`: The visit time in YYYY-MM-DD HH:MM:SS format.
+- `severity`: The severity of the condition (Mild, Moderate, Severe, or Critical).
+- `primary_diagnosis`: The main diagnosis.
+- `secondary_diagnoses`: A list of secondary diagnoses.
+- `recommended_tests`: A list of recommended tests.
+- `recommended_treatment`: A list of recommended treatments.
+- `follow_up`: Follow-up instructions.
+- `medical_reasoning`: The reasoning behind the diagnosis.
+
+**Input Notes:**
+Patient Amira Haddad, DOB 1978-03-14, seen 2026-10-09 09:30. Presents with 3 days of productive cough, fever 38.6C, right-sided pleuritic chest pain. SpO2 93% on air, RR 24, HR 104. Crackles right lower zone. History of type 2 diabetes on metformin. No allergies.
+
+The presentation (fever, productive cough, pleuritic pain, focal crackles, hypoxia) is consistent with community-acquired pneumonia. Diabetes is a comorbidity. Severity: SpO2 93% and RR 24 suggest moderate severity. I will structure the JSON accordingly, using "{" and "}" carefully.<unused95>```json
+{
+  "patient_name": "Amira Haddad",
+  "date_of_birth": "1978-03-14",
+  "visit_time": "2026-10-09 09:30:00",
+  "severity": "Moderate",
+  "primary_diagnosis": "Community-Acquired Pneumonia (CAP)",
+  "secondary_diagnoses": [
+    "Hypoxia",
+    "Type 2 Diabetes Mellitus"
+  ],
+  "recommended_tests": [
+    "Chest X-ray",
+    "Blood cultures",
+    "Sputum culture",
+    "Complete Blood Count (CBC)",
+    "Blood glucose"
+  ],
+  "recommended_treatment": [
+    "Empirical antibiotics (e.g. amoxicillin-clavulanate plus a macrolide)",
+    "Supplemental oxygen to maintain SpO2 above 94%",
+    "Antipyretics",
+    "Continue metformin with glucose monitoring"
+  ],
+  "follow_up": "Review in 48 hours or sooner if breathing worsens; repeat chest X-ray in 6 weeks.",
+  "medical_reasoning": "Fever, productive cough, pleuritic chest pain and focal right lower zone crackles indicate pneumonia. SpO2 of 93% with a respiratory rate of 24 places this in the moderate category, and diabetes increases the risk of complications."
+}
+```
