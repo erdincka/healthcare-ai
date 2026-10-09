@@ -1,5 +1,5 @@
 # EzAppConfig for importing HealthcareAI into HPE Private Cloud AI (AI Essentials).
-# Reference for the "Import Framework" UI: upload healthcareai-0.3.1.tgz, use the
+# Reference for the "Import Framework" UI: upload healthcareai-0.3.2.tgz, use the
 # values below and the logo. The UI generates metadata.name with a timestamp and
 # manages finalizers and status itself.
 apiVersion: ezconfig.hpe.ezaf.com/v1alpha1
@@ -11,7 +11,7 @@ metadata:
 spec:
   backoffLimit: 3
   category: dataScience
-  chartVersion: 0.3.1
+  chartVersion: 0.3.2
   description: AI-Assisted Healthcare, patient and clinician support
   install: true
   label: Healthcare AI
@@ -26,7 +26,7 @@ spec:
     replicaCount: 1
     image:
       repository: nexusglobal/triageai
-      tag: "1.2.1"
+      tag: "1.2.2"
       pullPolicy: IfNotPresent
     resources:
       requests:

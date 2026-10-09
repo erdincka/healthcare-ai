@@ -212,10 +212,6 @@ def create_interface() -> gr.Blocks:
                     with gr.Column():
                         gr.Markdown("### Radiologic Analysis")
                         xray_analysis_out = gr.Textbox(label="Analysis", lines=25)
-                        with gr.Accordion("Model reasoning", open=False):
-                            xray_reasoning_out = gr.Textbox(
-                                label="Reasoning", lines=8, show_label=False
-                            )
 
             # Tab: Settings
             with gr.TabItem("Settings", id="settings"):
@@ -508,17 +504,17 @@ def create_interface() -> gr.Blocks:
 
         save_db_btn.click(save_to_db_click, [triage_diagnosis_output, db_conn_str], [db_status])
 
-        async def run_xray(path, url, tok, mod, progress=gr.Progress()) -> tuple[str, str, str]:
+        async def run_xray(path, url, tok, mod, progress=gr.Progress()) -> tuple[str, str]:
             if not path:
-                return "No image provided.", "", ""
+                return "No image provided.", ""
             progress(0.3, desc="Analysing X-ray...")
-            ans, reasoning = await ai_client.analyze_xray_with_medgemma(path, url, tok, mod)
-            return "Analysis complete", ans, reasoning
+            ans = await ai_client.analyze_xray_with_medgemma(path, url, tok, mod)
+            return "Analysis complete", ans
 
         diagnose_xray_btn.click(
             run_xray,
             [xray_image, medgemma_url, medgemma_token, medgemma_model],
-            [xray_status, xray_analysis_out, xray_reasoning_out],
+            [xray_status, xray_analysis_out],
         )
 
         # Reactive Interactivity Updates

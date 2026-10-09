@@ -8,8 +8,7 @@ clinicians with three AI-assisted workflows:
 - **TranslationAI**: transcribe patient audio with Whisper and translate it with TranslateGemma.
 - **TriageAI**: transcribe clinical notes, have MedGemma produce a structured triage record
   (severity, diagnosis, tests, treatment, follow-up, reasoning) and save it to PostgreSQL.
-- **XrayAI**: radiology analysis of an uploaded X-ray with MedGemma, with the model's reasoning
-  shown in a collapsible section.
+- **XrayAI**: radiology analysis of an uploaded X-ray with MedGemma.
 
 <img width="2984" height="1400" alt="image" src="https://github.com/user-attachments/assets/cbfbdfad-cf3b-4cca-a903-949b84babff7" />
 
@@ -49,7 +48,7 @@ Whisper:         image davemcmahon/vllm-with-audio:latest  args: --model openai/
 
 ## Deploying on HPE Private Cloud AI
 
-1. In AI Essentials choose **Import Framework** and upload `healthcareai-0.3.1.tgz` (the packaged
+1. In AI Essentials choose **Import Framework** and upload `healthcareai-0.3.2.tgz` (the packaged
    chart from `frontend/helm`). Use the name `healthcareai`, namespace `healthcareai`, the logo
    from `logo.png` at the repository root and the values block from `healthcare-ezapp.yaml`.
 2. Open the app, go to **Settings**, enter the endpoints, tokens, model names and the PostgreSQL
@@ -82,7 +81,7 @@ docker run --rm --user root -v "$PWD/frontend/docker:/app" -w /app healthcare-ai
 ### Release
 
 ```bash
-docker buildx build --platform linux/amd64 -t nexusglobal/triageai:1.2.1 -t nexusglobal/triageai:latest --push frontend/docker
+docker buildx build --platform linux/amd64 -t nexusglobal/triageai:1.2.2 -t nexusglobal/triageai:latest --push frontend/docker
 helm package frontend/helm -d .
 ```
 

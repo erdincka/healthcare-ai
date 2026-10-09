@@ -260,16 +260,16 @@ async def analyze_xray_with_medgemma(
     medgemma_url: str,
     medgemma_token: str | None = None,
     model_name: str | None = None,
-) -> tuple[str, str]:
+) -> str:
     """Analyse an X-ray image with MedGemma.
 
     Returns:
-        ``(analysis, reasoning)``. ``reasoning`` holds the model's thinking
-        block when it emitted one, otherwise an empty string. Errors are
-        returned as the analysis text with empty reasoning.
+        The analysis text. Any reasoning block the model might emit is
+        stripped (none has been observed for vision prompts). Errors are
+        returned as text.
     """
     if not medgemma_url:
-        return "MedGemma URL not configured", ""
+        return "MedGemma URL not configured"
 
     try:
         ext = os.path.splitext(image_path)[1].lower().lstrip(".")
@@ -307,15 +307,16 @@ async def analyze_xray_with_medgemma(
             )
             if response.status_code == 200:
                 content, _ = _extract_choice(response.json())
-                return strip_reasoning(content)
+                analysis, _reasoning = strip_reasoning(content)
+                return analysis
 
             logger.error("xray_analysis_failed", status=response.status_code)
-            return f"Error: status {response.status_code}", ""
+            return f"Error: status {response.status_code}"
 
     except Exception as e:
         err_detail = format_exception_details(e)
         logger.error("xray_analysis_exception", error=err_detail, exc_info=True)
-        return f"Error: {err_detail}", ""
+        return f"Error: {err_detail}"
 
 
 def _build_triage_payload(text: str, model: str) -> dict[str, Any]:
