@@ -30,9 +30,9 @@ def load_config() -> dict[str, Any]:
         if os.path.exists(CONFIG_FILE):
             with open(CONFIG_FILE, "r") as f:
                 loaded_config: dict[str, Any] = json.load(f)
-                for service in DEFAULTS:
-                    if service not in loaded_config:
-                        loaded_config[service] = DEFAULTS[service]
+                # Fill services and fields added since the file was saved.
+                for service, defaults in DEFAULTS.items():
+                    loaded_config[service] = {**defaults, **loaded_config.get(service, {})}
                 return loaded_config
         return DEFAULTS
     except Exception as e:
