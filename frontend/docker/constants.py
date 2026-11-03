@@ -1,9 +1,21 @@
 
+# Speech-to-text API formats. "whisper" posts the file to /v1/audio/transcriptions;
+# "chat" sends it as an input_audio part to /v1/chat/completions (audio-capable LLMs
+# such as Nemotron Nano Omni).
+STT_FORMAT_WHISPER = "whisper"
+STT_FORMAT_CHAT = "chat"
+STT_API_FORMATS: list[tuple[str, str]] = [
+    ("Whisper (/v1/audio/transcriptions)", STT_FORMAT_WHISPER),
+    ("Chat completions (/v1/chat/completions)", STT_FORMAT_CHAT),
+]
+
+# The speech-to-text service keeps the "whisper" key so saved configurations still load.
 DEFAULTS: dict[str, dict[str, str]] = {
     "whisper": {
         "url": "",
         "token": "",
-        "model": "openai/whisper-large-v3"
+        "model": "openai/whisper-large-v3",
+        "api_format": STT_FORMAT_WHISPER
     },
     "translategemma": {
         "url": "",

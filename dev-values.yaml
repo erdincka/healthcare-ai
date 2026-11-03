@@ -1,0 +1,6 @@
+# Dev-only chart values for the Tilt dev loop (Tiltfile). Never used in production: the chart's own values.yaml is the
+# production default, and the PCAI app record carries the production overrides.
+#
+# The chart needs no dev overrides yet: it always renders its VirtualService (the Tiltfile sets the dev hostname), has
+# no SSO AuthorizationPolicy, and keeps the container filesystem writable, so live update works as it is.
+{}

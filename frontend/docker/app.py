@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 import ai_client
 import db_client
 from config_manager import load_config, save_config
-from constants import DEFAULTS, LANGUAGES
+from constants import DEFAULTS, LANGUAGES, STT_API_FORMATS
 from llm_output import LlmOutputError
 from utils import check_logo_exists, encode_image_to_base64, get_iso_language_code
 
@@ -122,7 +122,7 @@ def create_interface() -> gr.Blocks:
                             )
 
                         whisper_warn = gr.Markdown(
-                            "⚠️ **Whisper URL not configured.** Transcription disabled. Set URL in Settings.",
+                            "⚠️ **Speech-to-text URL not configured.** Transcription disabled. Set URL in Settings.",
                             visible=not is_configured(config["whisper"]["url"]),
                         )
                         transcribe_btn = gr.Button(
@@ -163,7 +163,7 @@ def create_interface() -> gr.Blocks:
                             visible=False,
                         )
                         whisper_warn_triage = gr.Markdown(
-                            "⚠️ **Whisper URL not configured.** Transcription disabled.",
+                            "⚠️ **Speech-to-text URL not configured.** Transcription disabled.",
                             visible=not is_configured(config["whisper"]["url"]),
                         )
                         transcribe_triage_btn = gr.Button(
@@ -218,7 +218,7 @@ def create_interface() -> gr.Blocks:
                 gr.Markdown("### Service Configuration")
                 with gr.Row():
                     with gr.Column():
-                        gr.Markdown("#### Whisper (STT)")
+                        gr.Markdown("#### Speech-to-text (STT)")
                         whisper_url = gr.Textbox(label="URL", value=config["whisper"]["url"])
                         whisper_token = gr.Textbox(
                             label="Token",
@@ -227,6 +227,13 @@ def create_interface() -> gr.Blocks:
                         )
                         whisper_model = gr.Textbox(
                             label="Model ID", value=config["whisper"]["model"]
+                        )
+                        whisper_api_format = gr.Dropdown(
+                            STT_API_FORMATS,
+                            label="API format",
+                            value=config["whisper"]["api_format"],
+                            info="Chat completions sends the audio to an audio-capable LLM "
+                            "such as Nemotron Omni.",
                         )
                     with gr.Column():
                         gr.Markdown("#### TranslateGemma")
@@ -286,12 +293,12 @@ def create_interface() -> gr.Blocks:
         trans_input_mode.change(toggle_mode, trans_input_mode, [trans_audio_file, trans_audio_mic])
 
         async def check_all(
-            w_url, w_tok, w_mod, n_url, n_tok, n_mod, m_url, m_tok, m_mod, db_conn
+            w_url, w_tok, w_mod, w_fmt, n_url, n_tok, n_mod, m_url, m_tok, m_mod, db_conn
         ) -> tuple[str, dict[str, Any]]:
             results = []
 
-            # Whisper Check
-            _, msg_w = await ai_client.check_model("whisper", w_url, w_tok, w_mod)
+            # Speech-to-text check: transcribes a test clip
+            _, msg_w = await ai_client.check_stt(w_url, w_tok, w_mod, w_fmt)
             results.append(f"STT: {msg_w}")
 
             # TranslateGemma Check
@@ -310,17 +317,17 @@ def create_interface() -> gr.Blocks:
             return "\n\n".join(results), gr.update(visible=show_init)
 
         async def save_and_check(
-            w_url, w_tok, w_mod, n_url, n_tok, n_mod, m_url, m_tok, m_mod, db_conn
+            w_url, w_tok, w_mod, w_fmt, n_url, n_tok, n_mod, m_url, m_tok, m_mod, db_conn
         ) -> tuple[str, dict[str, Any]]:
             new_config = {
-                "whisper": {"url": w_url, "token": w_tok, "model": w_mod},
+                "whisper": {"url": w_url, "token": w_tok, "model": w_mod, "api_format": w_fmt},
                 "translategemma": {"url": n_url, "token": n_tok, "model": n_mod},
                 "medgemma": {"url": m_url, "token": m_tok, "model": m_mod},
                 "database": {"connection_string": db_conn},
             }
             save_msg = save_config(new_config)
             statuses, init_visibility = await check_all(
-                w_url, w_tok, w_mod, n_url, n_tok, n_mod, m_url, m_tok, m_mod, db_conn
+                w_url, w_tok, w_mod, w_fmt, n_url, n_tok, n_mod, m_url, m_tok, m_mod, db_conn
             )
             return f"{statuses}\n\n{save_msg}", init_visibility
 
@@ -330,6 +337,7 @@ def create_interface() -> gr.Blocks:
                 whisper_url,
                 whisper_token,
                 whisper_model,
+                whisper_api_format,
                 translategemma_url,
                 translategemma_token,
                 translategemma_model,
@@ -346,6 +354,7 @@ def create_interface() -> gr.Blocks:
                 whisper_url,
                 whisper_token,
                 whisper_model,
+                whisper_api_format,
                 translategemma_url,
                 translategemma_token,
                 translategemma_model,
@@ -358,7 +367,7 @@ def create_interface() -> gr.Blocks:
         )
 
         async def run_db_init(
-            db_conn, w_url, w_tok, w_mod, n_url, n_tok, n_mod, m_url, m_tok, m_mod
+            db_conn, w_url, w_tok, w_mod, w_fmt, n_url, n_tok, n_mod, m_url, m_tok, m_mod
         ):
             ok, msg = await db_client.initialize_database(db_conn)
             if ok:
@@ -366,6 +375,7 @@ def create_interface() -> gr.Blocks:
                     w_url,
                     w_tok,
                     w_mod,
+                    w_fmt,
                     n_url,
                     n_tok,
                     n_mod,
@@ -384,6 +394,7 @@ def create_interface() -> gr.Blocks:
                 whisper_url,
                 whisper_token,
                 whisper_model,
+                whisper_api_format,
                 translategemma_url,
                 translategemma_token,
                 translategemma_model,
@@ -395,7 +406,7 @@ def create_interface() -> gr.Blocks:
         )
 
         async def run_trans(
-            mode, file, mic, lang, url, tok, mod, progress=gr.Progress()
+            mode, file, mic, lang, url, tok, mod, fmt, progress=gr.Progress()
         ) -> tuple[str, str, str]:
             path = file if mode == "Upload" else mic
             if not path:
@@ -404,7 +415,7 @@ def create_interface() -> gr.Blocks:
             is_auto = lang == ""
             progress(0.2, desc="Transcribing...")
             detected_lang, text = await ai_client.transcribe_audio(
-                path, is_auto, lang, url, tok, mod
+                path, is_auto, lang, url, tok, mod, fmt
             )
 
             status_msg = f"Transcribed{' (Detected: ' + detected_lang + ')' if is_auto else ''}."
@@ -441,6 +452,7 @@ def create_interface() -> gr.Blocks:
                 whisper_url,
                 whisper_token,
                 whisper_model,
+                whisper_api_format,
             ],
             [transcription_out, processing_status, patient_lang],
         )
@@ -458,13 +470,15 @@ def create_interface() -> gr.Blocks:
         )
 
         async def run_triage_trans(
-            mode, file, mic, url, tok, mod, progress=gr.Progress()
+            mode, file, mic, url, tok, mod, fmt, progress=gr.Progress()
         ) -> tuple[str, str]:
             path = file if mode == "Upload" else mic
             if not path:
                 return "", "No audio provided."
             progress(0.1, desc="Transcribing notes...")
-            _, text = await ai_client.transcribe_audio(path, False, "English (en)", url, tok, mod)
+            _, text = await ai_client.transcribe_audio(
+                path, False, "English (en)", url, tok, mod, fmt
+            )
             return text, "Transcription complete."
 
         async def run_analysis(
@@ -489,6 +503,7 @@ def create_interface() -> gr.Blocks:
                 whisper_url,
                 whisper_token,
                 whisper_model,
+                whisper_api_format,
             ],
             [triage_transcription, triage_status],
         )
@@ -568,6 +583,7 @@ def create_interface() -> gr.Blocks:
             w_url = current_config["whisper"]["url"]
             w_tok = current_config["whisper"]["token"]
             w_mod = current_config["whisper"]["model"]
+            w_fmt = current_config["whisper"]["api_format"]
 
             n_url = current_config["translategemma"]["url"]
             n_tok = current_config["translategemma"]["token"]
@@ -586,6 +602,7 @@ def create_interface() -> gr.Blocks:
                 w_url,
                 w_tok,
                 w_mod,
+                w_fmt,
                 n_url,
                 n_tok,
                 n_mod,
@@ -606,6 +623,7 @@ def create_interface() -> gr.Blocks:
                 whisper_url,
                 whisper_token,
                 whisper_model,
+                whisper_api_format,
                 translategemma_url,
                 translategemma_token,
                 translategemma_model,
