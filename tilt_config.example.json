@@ -1,0 +1,7 @@
+{
+  "context": "<your kube context>",
+  "registry": "<registry the cluster pulls from>/dev",
+  "endpoint": "healthcareai-dev.<your PCAI domain>",
+  "namespace": "dev",
+  "set": []
+}

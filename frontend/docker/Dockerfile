@@ -1,6 +1,6 @@
-# Production image for the HealthcareAI frontend (Gradio).
-# Development hot-reload is provided by the Tiltfile, not by this image.
-FROM python:3.12-slim-bookworm
+# HealthcareAI frontend (Gradio). Two targets: `dev` (the Tilt dev loop: restarts the app when synced source changes)
+# and `prod` (the default, built last: the published image).
+FROM python:3.12-slim-bookworm AS base
 
 LABEL maintainer="HealthcareAI Team" \
       description="Frontend UI for the HealthcareAI demo on HPE Private Cloud AI"
@@ -24,10 +24,22 @@ COPY requirements.txt .
 RUN uv pip install --no-cache -r requirements.txt
 
 RUN useradd -m -u 1000 appuser
-COPY --chown=appuser:appuser . .
-USER appuser
 
 EXPOSE 7860
+
+# Dev only: the same `python app.py` as production (Gradio's own reload mode skips launch()'s theme and host), restarted
+# by watchfiles when a .py file changes. Test tooling is installed so checks run in this image. appuser owns /app, as
+# Tilt syncs files in as that user.
+FROM base AS dev
+COPY requirements-dev.txt .
+RUN uv pip install --no-cache -r requirements-dev.txt && chown appuser:appuser /app
+COPY --chown=appuser:appuser . .
+USER appuser
+CMD ["watchfiles", "--filter", "python", "--target-type", "command", "python app.py", "/app"]
+
+FROM base AS prod
+COPY --chown=appuser:appuser . .
+USER appuser
 
 # Kubernetes probes (see the Helm chart) replace a Docker HEALTHCHECK.
 CMD ["python", "app.py"]

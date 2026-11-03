@@ -1,0 +1,16 @@
+# Paths Tilt neither watches nor sends to the image build. The chart, Tiltfile and dev values stay watched (a change
+# redeploys); the Tiltfile keeps them out of the image with docker_build(ignore=...).
+.git
+**/node_modules/
+**/.next/
+**/dist/
+**/.venv/
+**/__pycache__/
+*.tgz
+# Editor temp files and test caches: they match no sync() path, so Tilt would rebuild the image for them.
+**/*.tmp.*
+**/*.swp
+**/.pytest_cache/
+**/pytest-cache-files-*/
+**/.ruff_cache/
+**/.mypy_cache/

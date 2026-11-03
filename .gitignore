@@ -3,8 +3,13 @@
 **/*.pyc
 superset/dashboard_*
 .env
+.env.*
+!.env.example
 .venv
 **/__pycache__
 **/.ruff_cache
 **/.pytest_cache
 **/.mypy_cache
+
+# Tilt settings for your cluster (copy tilt_config.example.json)
+tilt_config.json

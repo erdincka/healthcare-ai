@@ -84,18 +84,31 @@ reinstalls.
 
 ## Development
 
-```bash
-cp .env.example .env   # set DOMAIN, NAMESPACE and KUBE_CONTEXT for Tilt
-tilt up                # builds the image, deploys the chart and hot-reloads code changes
-```
+Run a live-reload copy of the app on the cluster with [Tilt](https://tilt.dev), in namespace `dev`
+at `https://healthcareai-dev.<your PCAI domain>`. It never touches the live app: the Tiltfile
+refuses PCAI's own namespaces and any namespace a PCAI app is installed in, `healthcareai`
+included.
 
-The published image is production-only (`python app.py`); Tilt overrides the entrypoint with
-Gradio's reload mode for development. Checks run inside a container built from the Dockerfile:
+1. Install Tilt, Docker (Rancher Desktop), `kubectl` and `helm`; get a kubeconfig for the cluster;
+   `docker login` to the dev registry the cluster pulls from.
+2. Copy `tilt_config.example.json` to `tilt_config.json` (git-ignored) and set your kube context,
+   the registry and the dev hostname.
+3. Run `tilt up --context <context>` and open the link Tilt shows. Saving a `.py` file under
+   `frontend/docker` syncs it into the pod and restarts the app: the Dockerfile's `dev` target runs
+   the same `python app.py` as production under `watchfiles`.
+4. Run `tilt down --context <context>` when you stop: it frees the app's dev slot for the next
+   developer.
+
+Only one developer runs the dev copy at a time; Tilt tells you who holds it. The dev copy has its
+own Settings volume: enter the endpoints and tokens in its Settings tab, and point TriageAI at a
+development database, never the production one. `tilt down` deletes that volume too.
+
+Checks run in the `dev` target, which carries the test tooling:
 
 ```bash
-docker build -t healthcare-ai:dev frontend/docker
-docker run --rm --user root -v "$PWD/frontend/docker:/app" -w /app healthcare-ai:dev sh -c \
-  "uv pip install --system -r requirements-dev.txt && ruff check . && ruff format --check . \
+docker build --target dev -t healthcare-ai:dev frontend/docker
+docker run --rm -v "$PWD/frontend/docker:/app" -w /app healthcare-ai:dev sh -c \
+  "ruff check . && ruff format --check . \
    && mypy --strict llm_output.py ai_client.py db_client.py utils.py config_manager.py && pytest -q"
 ```
 
