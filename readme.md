@@ -78,8 +78,8 @@ Whisper:         image davemcmahon/vllm-with-audio:latest  args: --model openai/
 
 ## Deploying on HPE Private Cloud AI
 
-1. In AI Essentials choose **Import Framework** and upload `healthcareai-0.3.3.tgz` (the packaged
-   chart from `frontend/helm`). Use the name `healthcareai`, namespace `healthcareai`, the logo
+1. Download [`charts/healthcareai-0.3.4.tgz`](charts/healthcareai-0.3.4.tgz) (the packaged chart
+   from `frontend/helm`), then in AI Essentials choose **Import Framework** and upload it. Use the name `healthcareai`, namespace `healthcareai`, the logo
    from `logo.png` at the repository root and the values block from `healthcare-ezapp.yaml`.
 2. Open the app, go to **Settings**, enter the endpoints, tokens, model names and the PostgreSQL
    connection string, then **Check Health** and **Save Configuration**.
@@ -123,12 +123,17 @@ docker run --rm -v "$PWD/frontend/docker:/app" -w /app healthcare-ai:dev sh -c \
 
 ### Release
 
+Push a new image tag (never `latest`), bump the chart's `version`, and replace the package in
+`charts/`, which holds only the latest release's:
+
 ```bash
-docker buildx build --platform linux/amd64 -t nexusglobal/triageai:1.2.3 -t nexusglobal/triageai:latest --push frontend/docker
-helm package frontend/helm -d .
+docker build --platform linux/amd64 --target prod -t nexusglobal/triageai:1.2.4 --push frontend/docker
+git rm -q charts/healthcareai-<previous version>.tgz
+helm package frontend/helm --destination charts
 ```
 
-Then import the new `.tgz` through AI Essentials as described above.
+Then import the new package through AI Essentials as described above, or switch the existing
+app record to it.
 
 ## Dashboards
 

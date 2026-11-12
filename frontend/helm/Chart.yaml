@@ -2,5 +2,5 @@ apiVersion: v2
 name: healthcareai
 description: HealthcareAI demo (TranslationAI, TriageAI, XrayAI) for HPE Private Cloud AI
 type: application
-version: 0.3.3
-appVersion: "1.2.3"
+version: 0.3.4
+appVersion: "1.2.4"
