@@ -55,6 +55,15 @@ espeak-ng en-GB reading of "The patient reports a mild headache since this morni
 language hint, and passes only if the transcript matches. A wrong API format, model ID or token
 therefore fails the check instead of reporting a reachable port.
 
+### TranslateGemma
+
+The app sends one user message with the language codes as markers:
+`<<<source>>>es<<<target>>>en<<<text>>>Me duele la cabeza.` The vLLM build of the model
+(`Infomaniak-AI/vllm-translategemma-4b-it`) builds TranslateGemma's prompt from these markers and
+rejects a system message with "Conversations must start with a user prompt"; Ollama's
+`translategemma` accepts the same message. **Check Health** translates a short Spanish sentence
+and passes only if the English answer mentions "head".
+
 ### MLIS with vLLM (alternative)
 
 Deploy each model from the MLIS UI as a custom model:
@@ -62,15 +71,15 @@ Deploy each model from the MLIS UI as a custom model:
 ```text
 MedGemma:        image vllm/vllm-openai:<current>  args: --model google/medgemma-1.5-4b-it --port 8080
                  env: HUGGING_FACE_HUB_TOKEN=<token>
-TranslateGemma:  image vllm/vllm-openai:<current>  args: --model google/translategemma-2-9b --port 8080
+TranslateGemma:  image vllm/vllm-openai:<current>  args: --model Infomaniak-AI/vllm-translategemma-4b-it --port 8080
 Whisper:         image davemcmahon/vllm-with-audio:latest  args: --model openai/whisper-large-v3 --port 8080
                  (API format Whisper)
 ```
 
 ## Deploying on HPE Private Cloud AI
 
-1. In AI Essentials choose **Import Framework** and upload `healthcareai-0.3.3.tgz` (the packaged
-   chart from `frontend/helm`). Use the name `healthcareai`, namespace `healthcareai`, the logo
+1. Download [`charts/healthcareai-0.3.4.tgz`](charts/healthcareai-0.3.4.tgz) (the packaged chart
+   from `frontend/helm`), then in AI Essentials choose **Import Framework** and upload it. Use the name `healthcareai`, namespace `healthcareai`, the logo
    from `logo.png` at the repository root and the values block from `healthcare-ezapp.yaml`.
 2. Open the app, go to **Settings**, enter the endpoints, tokens, model names and the PostgreSQL
    connection string, then **Check Health** and **Save Configuration**.
@@ -114,12 +123,17 @@ docker run --rm -v "$PWD/frontend/docker:/app" -w /app healthcare-ai:dev sh -c \
 
 ### Release
 
+Push a new image tag (never `latest`), bump the chart's `version`, and replace the package in
+`charts/`, which holds only the latest release's:
+
 ```bash
-docker buildx build --platform linux/amd64 -t nexusglobal/triageai:1.2.3 -t nexusglobal/triageai:latest --push frontend/docker
-helm package frontend/helm -d .
+docker build --platform linux/amd64 --target prod -t nexusglobal/triageai:1.2.4 --push frontend/docker
+git rm -q charts/healthcareai-<previous version>.tgz
+helm package frontend/helm --destination charts
 ```
 
-Then import the new `.tgz` through AI Essentials as described above.
+Then import the new package through AI Essentials as described above, or switch the existing
+app record to it.
 
 ## Dashboards
 

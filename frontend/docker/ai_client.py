@@ -64,8 +64,19 @@ AUDIO_CONTENT_TYPES = {
 }
 
 
+TRANSLATION_MAX_TOKENS = 2048
+# Health-check sentence (Spanish: "My head has hurt since yesterday.") and a word any
+# correct English translation contains.
+TRANSLATION_CHECK_TEXT = "Me duele la cabeza desde ayer."
+TRANSLATION_CHECK_KEYWORD = "head"
+
+
 class TranscriptionError(RuntimeError):
     """The speech-to-text endpoint rejected the request or returned no transcript."""
+
+
+class TranslationError(RuntimeError):
+    """The TranslateGemma endpoint rejected the request or returned no translation."""
 
 
 TRIAGE_SYSTEM_PROMPT = (
@@ -445,6 +456,80 @@ async def check_stt(
     return True, f'Transcription works ({elapsed:.1f} s): heard "{heard}"{detected}'
 
 
+def _build_translation_payload(
+    text: str, source_code: str, target_code: str, model: str
+) -> dict[str, Any]:
+    """Build the chat-completions request for a TranslateGemma translation.
+
+    TranslateGemma takes a single user message and builds its translation
+    prompt from the language codes. The vLLM build of the model
+    (``Infomaniak-AI/vllm-translategemma-4b-it``) reads the codes from these
+    markers and rejects a system message; Ollama's ``translategemma`` accepts
+    the same message.
+    """
+    return {
+        "model": model,
+        "messages": [
+            {
+                "role": "user",
+                "content": f"<<<source>>>{source_code}<<<target>>>{target_code}<<<text>>>{text}",
+            }
+        ],
+        "max_tokens": TRANSLATION_MAX_TOKENS,
+        "temperature": 0.1,
+    }
+
+
+async def request_translation(
+    text: str,
+    source_code: str,
+    target_code: str,
+    url: str,
+    token: str | None = None,
+    model_name: str | None = None,
+) -> str:
+    """Translate text with the TranslateGemma endpoint.
+
+    Args:
+        text: Text to translate.
+        source_code: ISO code of the text's language, for example ``es``.
+        target_code: ISO code of the language to translate into.
+        url: Base URL of the OpenAI-compatible endpoint.
+        token: Optional bearer token.
+        model_name: Model identifier; falls back to the configured default.
+
+    Returns:
+        The translation.
+
+    Raises:
+        TranslationError: If the endpoint rejects the request or returns no translation.
+        httpx.HTTPError: On connection or timeout failures.
+    """
+    payload = _build_translation_payload(
+        text, source_code, target_code, model_name or DEFAULTS["translategemma"]["model"]
+    )
+    api_url = _get_api_url(url)
+    logger.info("requesting_translation", url=api_url, model=payload["model"])
+    async with httpx.AsyncClient(verify=False) as client_http:
+        response = await client_http.post(
+            api_url, headers=_auth_headers(token), json=payload, timeout=300.0
+        )
+
+    if not response.is_success:
+        raise TranslationError(
+            f"TranslateGemma API returned {response.status_code}: {_error_detail(response)}"
+        )
+    choices = response.json().get("choices") or []
+    if not choices:
+        raise TranslationError("the model returned no answer")
+    if choices[0].get("finish_reason") == "length":
+        raise TranslationError("the translation was cut off at the token limit")
+    translation = str((choices[0].get("message") or {}).get("content") or "").strip()
+    if not translation:
+        raise TranslationError("the model returned an empty translation")
+    return translation
+
+
 async def translate_text(
     text: str,
     source_lang: str,
@@ -453,51 +538,60 @@ async def translate_text(
     translategemma_token: str | None = None,
     model_name: str | None = None,
 ) -> str:
-    """Translate text using TranslateGemma API."""
+    """Translate text for the UI; errors come back as the text.
+
+    Args:
+        source_lang: ISO code of the text's language.
+        target_lang: ISO code of the language to translate into.
+    """
     if not translategemma_url or not text.strip():
         return text
 
     try:
-        # normalize_language_name already returns "Name (code)".
-        s_lang_name = normalize_language_name(source_lang)
-        t_lang_name = normalize_language_name(target_lang)
-
-        system_msg = (
-            f"You are a professional {s_lang_name} to {t_lang_name} translator. "
-            f"Produce only the {t_lang_name} translation. \n\n{text}"
+        return await request_translation(
+            text, source_lang, target_lang, translategemma_url, translategemma_token, model_name
         )
-
-        payload = {
-            "model": model_name or DEFAULTS["translategemma"]["model"],
-            "messages": [
-                {"role": "system", "content": system_msg},
-                {"role": "user", "content": [{"type": "text", "text": text}]},
-            ],
-            "max_tokens": 2048,
-            "temperature": 0.1,
-        }
-
-        api_url = _get_api_url(translategemma_url)
-        logger.info("requesting_translation", url=api_url, model=payload["model"])
-
-        async with httpx.AsyncClient(verify=False) as client_http:
-            response = await client_http.post(
-                api_url, headers=_auth_headers(translategemma_token), json=payload, timeout=300.0
-            )
-
-        if response.status_code == 200:
-            result = response.json()
-            return (
-                result["choices"][0]["message"]["content"] if "choices" in result else str(result)
-            )
-
-        logger.error("translation_api_failed", status=response.status_code)
-        return f"Translation failed: {response.status_code}"
-
+    except TranslationError as exc:
+        logger.error("translation_api_failed", error=str(exc))
+        return f"Translation failed ({exc}). Check the URL, token and model ID in Settings."
     except Exception as e:
         err_detail = format_exception_details(e)
         logger.error("translation_exception", error=err_detail, exc_info=True)
         return f"Error: {err_detail}"
+
+
+async def check_translation(
+    url: str, token: str | None, model_name: str | None
+) -> tuple[bool, str]:
+    """Health check: translate a short Spanish sentence into English."""
+    if not url:
+        return False, "TranslateGemma URL is not configured"
+
+    logger.info("checking_translation_health", url=url.rstrip("/"))
+    started = time.perf_counter()
+    try:
+        translation = await request_translation(
+            TRANSLATION_CHECK_TEXT, "es", "en", url, token, model_name
+        )
+    except TranslationError as exc:
+        logger.error("translation_check_failed", error=str(exc))
+        return False, f"Translation failed ({exc}). Check the URL, token and model ID."
+    except Exception as e:
+        err_detail = format_exception_details(e)
+        logger.error("translation_check_failed", error=err_detail, exc_info=True)
+        return False, f"TranslateGemma API error: {err_detail}"
+    elapsed = time.perf_counter() - started
+
+    if TRANSLATION_CHECK_KEYWORD not in translation.lower():
+        message = (
+            f'Translation of the test sentence returned "{translation[:120]}"; expected '
+            f'English mentioning "{TRANSLATION_CHECK_KEYWORD}". Check the model ID.'
+        )
+        return False, message
+    return (
+        True,
+        f'Translation works ({elapsed:.1f} s): "{TRANSLATION_CHECK_TEXT}" → "{translation}"',
+    )
 
 
 async def analyze_xray_with_medgemma(
