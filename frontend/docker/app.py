@@ -302,7 +302,7 @@ def create_interface() -> gr.Blocks:
             results.append(f"STT: {msg_w}")
 
             # TranslateGemma Check
-            _, msg_n = await ai_client.check_model("translategemma", n_url, n_tok, n_mod)
+            _, msg_n = await ai_client.check_translation(n_url, n_tok, n_mod)
             results.append(f"Translate: {msg_n}")
 
             # MedGemma Check
